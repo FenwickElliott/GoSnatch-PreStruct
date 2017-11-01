@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,6 +20,7 @@ func main() {
 	} else {
 		os.Setenv("AccessBearer", string(accessBearer))
 	}
+	refresh()
 }
 
 func initialize() {
@@ -76,4 +78,37 @@ func write(name, content string) {
 	f, _ := os.Create(name)
 	f.WriteString(content)
 	defer f.Close()
+}
+
+func refresh() {
+	fmt.Println("refreshing")
+	refreshBody, err := ioutil.ReadFile("refreshBody")
+	if err != nil {
+		initialize()
+	}
+	body := strings.NewReader(string(refreshBody))
+	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", body)
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Authorization", "Basic NzE1YzE1ZmM3NTAzNDAxZmIxMzZkNmE3OTA3OWI1MGM6ZTkxZWZkZDAzNDVkNDlkNTllOGE2ZDc1YjUzZTE2YTE=")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err2 := http.DefaultClient.Do(req)
+	if err2 != nil {
+		panic(err2)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+
+	bodyMap := make(map[string]interface{})
+
+	err3 := json.Unmarshal(bodyBytes, &bodyMap)
+	if err3 != nil {
+		panic(err3)
+	}
+
+	os.Setenv("AccessBearer", "Bearer "+bodyMap["access_token"].(string))
+	write("accessBearer", "Bearer "+bodyMap["access_token"].(string))
 }
