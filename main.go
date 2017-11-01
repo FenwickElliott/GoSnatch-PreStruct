@@ -26,6 +26,13 @@ func main() {
 	fmt.Println(songName)
 	playlistID := getPlaylist()
 	fmt.Println(playlistID)
+	userID := getMe()
+	fmt.Println(userID)
+}
+
+func getMe() string {
+	me := get("me")
+	return me["id"].(string)
 }
 
 func getPlaylist() string {
