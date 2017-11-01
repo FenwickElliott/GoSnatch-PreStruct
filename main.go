@@ -24,15 +24,31 @@ func main() {
 	songID, songName := getSong()
 	fmt.Println(songID)
 	fmt.Println(songName)
+	playlistID := getPlaylist()
+	fmt.Println(playlistID)
+}
+
+func getPlaylist() string {
+	list := get("me/playlists")
+	items := list["items"].([]interface{})
+
+	for _, v := range items {
+		cell := v.(map[string]interface{})
+		if cell["name"] == "GoSnatch" {
+			return cell["id"].(string)
+		}
+	}
+	// create playlist
+	return "Playlist not found"
 }
 
 func getSong() (string, string) {
-	song := getReturn("me/player/currently-playing")
+	song := get("me/player/currently-playing")
 	item := song["item"].(map[string]interface{})
 	return item["id"].(string), item["name"].(string)
 }
 
-func getReturn(endpoint string) map[string]interface{} {
+func get(endpoint string) map[string]interface{} {
 	url := "https://api.spotify.com/v1/" + endpoint
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("Authorization", os.Getenv("AccessBearer"))
@@ -45,7 +61,7 @@ func getReturn(endpoint string) map[string]interface{} {
 
 	if resp.StatusCode == 401 {
 		refresh()
-		get(endpoint)
+		main()
 	}
 
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
