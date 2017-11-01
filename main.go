@@ -22,12 +22,33 @@ func main() {
 	}
 
 	songID, songName := getSong()
-	fmt.Println(songID)
-	fmt.Println(songName)
 	playlistID := getPlaylist()
-	fmt.Println(playlistID)
 	userID := getMe()
-	fmt.Println(userID)
+
+	sucsess := goSnatch(userID, songID, playlistID)
+
+	if sucsess {
+		fmt.Println(songName)
+	}
+}
+
+func goSnatch(userID, songID, playlistID string) bool {
+	url := "https://api.spotify.com/v1/users/" + userID + "/playlists/" + playlistID + "/tracks?uris=spotify%3Atrack%3A" + songID
+
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Authorization", os.Getenv("AccessBearer"))
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	return true
 }
 
 func getMe() string {
