@@ -20,7 +20,35 @@ func main() {
 	} else {
 		os.Setenv("AccessBearer", string(accessBearer))
 	}
-	refresh()
+
+	get("me")
+
+}
+
+func get(endpoint string) {
+	url := "https://api.spotify.com/v1/" + endpoint
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", os.Getenv("AccessBearer"))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 401 {
+		refresh()
+		get(endpoint)
+	}
+
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+
+	fmt.Println(string(bodyBytes))
+
+	// 	res := map[string]string{}
+	// 	json.Unmarshal(bodyBytes, res)
+
+	// 	return res
 }
 
 func initialize() {
