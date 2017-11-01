@@ -21,8 +21,7 @@ func main() {
 		os.Setenv("AccessBearer", string(accessBearer))
 	}
 
-	get("me")
-
+	get("me/player/currently-playing")
 }
 
 func get(endpoint string) {
@@ -43,6 +42,7 @@ func get(endpoint string) {
 
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 
+	fmt.Println(resp.StatusCode)
 	fmt.Println(string(bodyBytes))
 
 	// 	res := map[string]string{}
@@ -70,7 +70,7 @@ func catch(w http.ResponseWriter, r *http.Request) {
 }
 
 func askAuth() {
-	url := "https://accounts.spotify.com/authorize/?client_id=715c15fc7503401fb136d6a79079b50c&response_type=code&redirect_uri=http://localhost:3456/catch"
+	url := "https://accounts.spotify.com/authorize/?client_id=715c15fc7503401fb136d6a79079b50c&response_type=code&redirect_uri=http://localhost:3456/catch&scope=user-read-playback-state%20playlist-read-private%20playlist-modify-private"
 	exec.Command("open", url).Start()
 }
 
