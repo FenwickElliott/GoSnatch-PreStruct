@@ -10,7 +10,11 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/0xAX/notificator"
 )
+
+var notify *notificator.Notificator
 
 func main() {
 	accessBearer, err := ioutil.ReadFile("accessBearer")
@@ -28,7 +32,14 @@ func main() {
 	sucsess := goSnatch(userID, songID, playlistID)
 
 	if sucsess {
-		fmt.Println(songName)
+		notify = notificator.New(notificator.Options{
+			DefaultIcon: "icon/default.png",
+			AppName:     "GoSnatch",
+		})
+
+		msg := songName + " was sucsessfully GoSnatched!!!"
+
+		notify.Push("Horray", msg, "/home/user/icon.png", notificator.UR_CRITICAL)
 	}
 }
 
