@@ -11,14 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0xAX/notificator"
+	"github.com/deckarep/gosx-notifier"
 )
 
-var notify *notificator.Notificator
-var DB = os.Getenv("GOPATH") + "/src/github.com/FenwickElliott/GoSnatch/db/"
+var db = os.Getenv("GOPATH") + "/src/github.com/FenwickElliott/GoSnatch/db/"
 
 func main() {
-	accessBearer, err := ioutil.ReadFile(DB + "accessBearer")
+	accessBearer, err := ioutil.ReadFile(db + "accessBearer")
 
 	if err != nil {
 		initialize()
@@ -35,15 +34,20 @@ func main() {
 	if notThere {
 		sucsess := goSnatch(userID, songID, playlistID)
 		if sucsess {
-			notify = notificator.New(notificator.Options{
-				DefaultIcon: DB + "logo.png",
-				AppName:     "GoSnatch",
-			})
-			notify.Push(songName, artistName, DB+"logo.png", notificator.UR_CRITICAL)
+			sendNote(songName, artistName, "Was sucsessfully Snatched")
 		}
 	} else {
-		fmt.Println("duplicate")
+		sendNote(songName, artistName, "Was already there")
 	}
+}
+
+func sendNote(title, subtitle, message string) {
+	note := gosxnotifier.NewNotification(message)
+	note.Title = title
+	note.Subtitle = subtitle
+	// note.ContentImage = db + "icon.png"
+	note.AppIcon = db + "icon.png"
+	_ = note.Push()
 }
 
 func goSnatch(userID, songID, playlistID string) bool {
@@ -188,7 +192,7 @@ func exchangeCode(code string) {
 }
 
 func write(name, content string) {
-	target := DB + name
+	target := db + name
 	f, _ := os.Create(target)
 	f.WriteString(content)
 	defer f.Close()
