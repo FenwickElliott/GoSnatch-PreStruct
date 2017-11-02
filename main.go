@@ -15,9 +15,10 @@ import (
 )
 
 var notify *notificator.Notificator
+var DB = os.Getenv("GOPATH") + "/src/github.com/FenwickElliott/GoSnatch/db/"
 
 func main() {
-	accessBearer, err := ioutil.ReadFile("accessBearer")
+	accessBearer, err := ioutil.ReadFile(DB + "accessBearer")
 
 	if err != nil {
 		initialize()
@@ -103,11 +104,15 @@ func get(endpoint string) map[string]interface{} {
 		main()
 	}
 
+	if resp.StatusCode == 204 {
+		panic("\n\nApperetnly no song is playing, sorry\n\nMust fix this more gracefully")
+	}
+
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	map2b := make(map[string]interface{})
 	err = json.Unmarshal(bodyBytes, &map2b)
 	if err != nil {
-		panic(err)
+		// panic(err)
 	}
 	return map2b
 }
@@ -164,7 +169,8 @@ func exchangeCode(code string) {
 }
 
 func write(name, content string) {
-	f, _ := os.Create(name)
+	target := DB + name
+	f, _ := os.Create(target)
 	f.WriteString(content)
 	defer f.Close()
 }
