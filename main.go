@@ -26,7 +26,7 @@ func main() {
 		os.Setenv("AccessBearer", string(accessBearer))
 	}
 
-	songID, songName := getSong()
+	songID, songName, artistName := getSong()
 	playlistID := getPlaylist()
 	userID := getMe()
 
@@ -38,9 +38,9 @@ func main() {
 			AppName:     "GoSnatch",
 		})
 
-		msg := songName + " was sucsessfully GoSnatched!!!"
+		// msg := songName + " was sucsessfully GoSnatched!!!"
 
-		notify.Push("Horray", msg, "/home/user/icon.png", notificator.UR_CRITICAL)
+		notify.Push(songName, artistName, "/home/user/icon.png", notificator.UR_CRITICAL)
 	}
 }
 
@@ -82,10 +82,12 @@ func getPlaylist() string {
 	return "Playlist not found"
 }
 
-func getSong() (string, string) {
+func getSong() (string, string, string) {
 	song := get("me/player/currently-playing")
 	item := song["item"].(map[string]interface{})
-	return item["id"].(string), item["name"].(string)
+	artists := item["artists"].([]interface{})
+	artist := artists[0].(map[string]interface{})
+	return item["id"].(string), item["name"].(string), artist["name"].(string)
 }
 
 func get(endpoint string) map[string]interface{} {
