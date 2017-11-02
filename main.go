@@ -30,17 +30,19 @@ func main() {
 	playlistID := getPlaylist()
 	userID := getMe()
 
-	sucsess := goSnatch(userID, songID, playlistID)
+	notThere := checkPlaylist(userID, songID, playlistID)
 
-	if sucsess {
-		notify = notificator.New(notificator.Options{
-			DefaultIcon: "icon/default.png",
-			AppName:     "GoSnatch",
-		})
-
-		// msg := songName + " was sucsessfully GoSnatched!!!"
-
-		notify.Push(songName, artistName, "/home/user/icon.png", notificator.UR_CRITICAL)
+	if notThere {
+		sucsess := goSnatch(userID, songID, playlistID)
+		if sucsess {
+			notify = notificator.New(notificator.Options{
+				DefaultIcon: DB + "logo.png",
+				AppName:     "GoSnatch",
+			})
+			notify.Push(songName, artistName, DB+"logo.png", notificator.UR_CRITICAL)
+		}
+	} else {
+		fmt.Println("duplicate")
 	}
 }
 
@@ -80,6 +82,21 @@ func getPlaylist() string {
 	}
 	// create playlist
 	return "Playlist not found"
+}
+
+func checkPlaylist(userID, songID, playlistID string) bool {
+	url := "users/" + userID + "/playlists/" + playlistID + "/tracks"
+	playlist := get(url)
+	tracks := playlist["items"].([]interface{})
+
+	for _, v := range tracks {
+		track := v.(map[string]interface{})
+		track2 := track["track"].(map[string]interface{})
+		if track2["id"] == songID {
+			return false
+		}
+	}
+	return true
 }
 
 func getSong() (string, string, string) {
