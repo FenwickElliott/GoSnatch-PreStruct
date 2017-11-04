@@ -16,6 +16,8 @@ import (
 
 var db = os.Getenv("GOPATH") + "/src/github.com/FenwickElliott/GoSnatch/db/"
 
+// var db = ""
+
 func main() {
 	accessBearer, err := ioutil.ReadFile(db + "accessBearer")
 
@@ -38,8 +40,7 @@ func main() {
 	playlistID := <-cPlaylistID
 
 	if checkPlaylist(userID, song[0], playlistID) {
-		sucsess := goSnatch(userID, song[0], playlistID)
-		if sucsess {
+		if goSnatch(userID, song[0], playlistID) {
 			sendNote(song[1], song[2], "Was sucsessfully Snatched")
 		}
 	} else {
@@ -114,6 +115,11 @@ func checkPlaylist(userID, songID, playlistID string) bool {
 
 func getSong(cSong chan []string) {
 	song := get("me/player/currently-playing")
+	if len(song) == 0 {
+		fmt.Println("nothing here")
+		sendNote("Nothing Here", "Sorry", "...")
+		os.Exit(0)
+	}
 	item := song["item"].(map[string]interface{})
 	artists := item["artists"].([]interface{})
 	artist := artists[0].(map[string]interface{})
@@ -150,6 +156,7 @@ func get(endpoint string) map[string]interface{} {
 }
 
 func initialize() {
+	fmt.Println("Initializing...")
 	go serve()
 	askAuth()
 	time.Sleep(15 * time.Second)
@@ -208,7 +215,7 @@ func write(name, content string) {
 }
 
 func refresh() {
-	fmt.Println("refreshing")
+	fmt.Println("Refreshing...")
 	refreshBody, err := ioutil.ReadFile("refreshBody")
 	if err != nil {
 		initialize()
