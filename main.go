@@ -26,10 +26,6 @@ func main() {
 		os.Setenv("AccessBearer", string(accessBearer))
 	}
 
-	// songID, songName, artistName := getSong()
-	// playlistID := getPlaylist()
-	// userID := getMe()
-
 	cPlaylistID := make(chan string)
 	cSong := make(chan []string)
 	cUserID := make(chan string)
@@ -41,10 +37,6 @@ func main() {
 	userID := <-cUserID
 	song := <-cSong
 	playlistID := <-cPlaylistID
-
-	fmt.Println(userID)
-	fmt.Println(song[1])
-	fmt.Println(playlistID)
 
 	notThere := checkPlaylist(userID, song[0], playlistID)
 
