@@ -11,10 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0xAX/notificator"
+	gosxnotifier "github.com/deckarep/gosx-notifier"
 )
 
-var notify *notificator.Notificator
 var db = os.Getenv("GOPATH") + "/src/github.com/FenwickElliott/GoSnatch/db/"
 
 func main() {
@@ -41,16 +40,20 @@ func main() {
 	if checkPlaylist(userID, song[0], playlistID) {
 		sucsess := goSnatch(userID, song[0], playlistID)
 		if sucsess {
-			notify = notificator.New(notificator.Options{
-				DefaultIcon: db + "logo.png",
-				AppName:     "GoSnatch",
-			})
-			notify.Push(song[1], song[2], db+"logo.png", notificator.UR_CRITICAL)
-			return
+			sendNote(song[1], song[2], "Was sucsessfully Snatched")
 		}
 	} else {
-		fmt.Println("duplicate")
+		sendNote(song[1], song[2], "Had already been Snatched")
 	}
+}
+
+func sendNote(title, subtitle, message string) {
+	note := gosxnotifier.NewNotification(message)
+	note.Title = title
+	note.Subtitle = subtitle
+	// note.ContentImage = db + "icon.png"
+	note.AppIcon = db + "icon.png"
+	_ = note.Push()
 }
 
 func goSnatch(userID, songID, playlistID string) bool {
@@ -111,11 +114,9 @@ func checkPlaylist(userID, songID, playlistID string) bool {
 
 func getSong(cSong chan []string) {
 	song := get("me/player/currently-playing")
-	// fmt.Println(song)
 	item := song["item"].(map[string]interface{})
 	artists := item["artists"].([]interface{})
 	artist := artists[0].(map[string]interface{})
-	// return item["id"].(string), item["name"].(string), artist["name"].(string)
 	cSong <- []string{item["id"].(string), item["name"].(string), artist["name"].(string)}
 }
 
