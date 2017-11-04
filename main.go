@@ -25,19 +25,25 @@ func main() {
 		os.Setenv("AccessBearer", string(accessBearer))
 	}
 
-	songID, songName, artistName := getSong()
-	playlistID := getPlaylist()
-	userID := getMe()
+	cPlaylistID := make(chan string)
+	cSong := make(chan []string)
+	cUserID := make(chan string)
 
-	notThere := checkPlaylist(userID, songID, playlistID)
+	go getPlaylist(cPlaylistID)
+	go getSong(cSong)
+	go getMe(cUserID)
 
-	if notThere {
-		sucsess := goSnatch(userID, songID, playlistID)
+	userID := <-cUserID
+	song := <-cSong
+	playlistID := <-cPlaylistID
+
+	if checkPlaylist(userID, song[0], playlistID) {
+		sucsess := goSnatch(userID, song[0], playlistID)
 		if sucsess {
-			sendNote(songName, artistName, "Was sucsessfully Snatched")
+			sendNote(song[1], song[2], "Was sucsessfully Snatched")
 		}
 	} else {
-		sendNote(songName, artistName, "Was already there")
+		sendNote(song[1], song[2], "Had already been Snatched")
 	}
 }
 
@@ -69,23 +75,26 @@ func goSnatch(userID, songID, playlistID string) bool {
 	return true
 }
 
-func getMe() string {
+func getMe(cUserID chan string) {
 	me := get("me")
-	return me["id"].(string)
+	cUserID <- me["id"].(string)
+	// return me["id"].(string)
 }
 
-func getPlaylist() string {
+func getPlaylist(cPlaylistID chan string) {
 	list := get("me/playlists")
 	items := list["items"].([]interface{})
 
 	for _, v := range items {
 		cell := v.(map[string]interface{})
 		if cell["name"] == "GoSnatch" {
-			return cell["id"].(string)
+			// return cell["id"].(string)
+			cPlaylistID <- cell["id"].(string)
+			return
 		}
 	}
 	// create playlist
-	return "Playlist not found"
+	// return "Playlist not found"
 }
 
 func checkPlaylist(userID, songID, playlistID string) bool {
@@ -103,12 +112,12 @@ func checkPlaylist(userID, songID, playlistID string) bool {
 	return true
 }
 
-func getSong() (string, string, string) {
+func getSong(cSong chan []string) {
 	song := get("me/player/currently-playing")
 	item := song["item"].(map[string]interface{})
 	artists := item["artists"].([]interface{})
 	artist := artists[0].(map[string]interface{})
-	return item["id"].(string), item["name"].(string), artist["name"].(string)
+	cSong <- []string{item["id"].(string), item["name"].(string), artist["name"].(string)}
 }
 
 func get(endpoint string) map[string]interface{} {
@@ -128,7 +137,7 @@ func get(endpoint string) map[string]interface{} {
 	}
 
 	if resp.StatusCode == 204 {
-		panic("\n\nApperetnly no song is playing, sorry\n\nMust fix this more gracefully")
+		// panic("\n\nApperetnly no song is playing, sorry\n\nMust fix this more gracefully")
 	}
 
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
