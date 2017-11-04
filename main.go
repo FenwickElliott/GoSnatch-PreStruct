@@ -38,9 +38,7 @@ func main() {
 	song := <-cSong
 	playlistID := <-cPlaylistID
 
-	notThere := checkPlaylist(userID, song[0], playlistID)
-
-	if notThere {
+	if checkPlaylist(userID, song[0], playlistID) {
 		sucsess := goSnatch(userID, song[0], playlistID)
 		if sucsess {
 			notify = notificator.New(notificator.Options{
@@ -131,8 +129,6 @@ func get(endpoint string) map[string]interface{} {
 		panic(err)
 	}
 	defer resp.Body.Close()
-
-	// fmt.Println(resp.StatusCode)
 
 	if resp.StatusCode == 401 {
 		refresh()
