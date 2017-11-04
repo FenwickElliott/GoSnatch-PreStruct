@@ -15,10 +15,10 @@ import (
 )
 
 var notify *notificator.Notificator
-var DB = os.Getenv("GOPATH") + "/src/github.com/FenwickElliott/GoSnatch/db/"
+var db = os.Getenv("GOPATH") + "/src/github.com/FenwickElliott/GoSnatch/db/"
 
 func main() {
-	accessBearer, err := ioutil.ReadFile(DB + "accessBearer")
+	accessBearer, err := ioutil.ReadFile(db + "accessBearer")
 
 	if err != nil {
 		initialize()
@@ -26,20 +26,37 @@ func main() {
 		os.Setenv("AccessBearer", string(accessBearer))
 	}
 
-	songID, songName, artistName := getSong()
-	playlistID := getPlaylist()
-	userID := getMe()
+	// songID, songName, artistName := getSong()
+	// playlistID := getPlaylist()
+	// userID := getMe()
 
-	notThere := checkPlaylist(userID, songID, playlistID)
+	cPlaylistID := make(chan string)
+	cSong := make(chan []string)
+	cUserID := make(chan string)
+
+	go getPlaylist(cPlaylistID)
+	go getSong(cSong)
+	go getMe(cUserID)
+
+	userID := <-cUserID
+	song := <-cSong
+	playlistID := <-cPlaylistID
+
+	fmt.Println(userID)
+	fmt.Println(song[1])
+	fmt.Println(playlistID)
+
+	notThere := checkPlaylist(userID, song[0], playlistID)
 
 	if notThere {
-		sucsess := goSnatch(userID, songID, playlistID)
+		sucsess := goSnatch(userID, song[0], playlistID)
 		if sucsess {
 			notify = notificator.New(notificator.Options{
-				DefaultIcon: DB + "logo.png",
+				DefaultIcon: db + "logo.png",
 				AppName:     "GoSnatch",
 			})
-			notify.Push(songName, artistName, DB+"logo.png", notificator.UR_CRITICAL)
+			notify.Push(song[1], song[2], db+"logo.png", notificator.UR_CRITICAL)
+			return
 		}
 	} else {
 		fmt.Println("duplicate")
@@ -65,23 +82,26 @@ func goSnatch(userID, songID, playlistID string) bool {
 	return true
 }
 
-func getMe() string {
+func getMe(cUserID chan string) {
 	me := get("me")
-	return me["id"].(string)
+	cUserID <- me["id"].(string)
+	// return me["id"].(string)
 }
 
-func getPlaylist() string {
+func getPlaylist(cPlaylistID chan string) {
 	list := get("me/playlists")
 	items := list["items"].([]interface{})
 
 	for _, v := range items {
 		cell := v.(map[string]interface{})
 		if cell["name"] == "GoSnatch" {
-			return cell["id"].(string)
+			// return cell["id"].(string)
+			cPlaylistID <- cell["id"].(string)
+			return
 		}
 	}
 	// create playlist
-	return "Playlist not found"
+	// return "Playlist not found"
 }
 
 func checkPlaylist(userID, songID, playlistID string) bool {
@@ -99,12 +119,14 @@ func checkPlaylist(userID, songID, playlistID string) bool {
 	return true
 }
 
-func getSong() (string, string, string) {
+func getSong(cSong chan []string) {
 	song := get("me/player/currently-playing")
+	// fmt.Println(song)
 	item := song["item"].(map[string]interface{})
 	artists := item["artists"].([]interface{})
 	artist := artists[0].(map[string]interface{})
-	return item["id"].(string), item["name"].(string), artist["name"].(string)
+	// return item["id"].(string), item["name"].(string), artist["name"].(string)
+	cSong <- []string{item["id"].(string), item["name"].(string), artist["name"].(string)}
 }
 
 func get(endpoint string) map[string]interface{} {
@@ -118,13 +140,15 @@ func get(endpoint string) map[string]interface{} {
 	}
 	defer resp.Body.Close()
 
+	// fmt.Println(resp.StatusCode)
+
 	if resp.StatusCode == 401 {
 		refresh()
 		main()
 	}
 
 	if resp.StatusCode == 204 {
-		panic("\n\nApperetnly no song is playing, sorry\n\nMust fix this more gracefully")
+		// panic("\n\nApperetnly no song is playing, sorry\n\nMust fix this more gracefully")
 	}
 
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
@@ -188,7 +212,7 @@ func exchangeCode(code string) {
 }
 
 func write(name, content string) {
-	target := DB + name
+	target := db + name
 	f, _ := os.Create(target)
 	f.WriteString(content)
 	defer f.Close()
