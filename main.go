@@ -94,8 +94,35 @@ func getPlaylist(cPlaylistID chan string) {
 			return
 		}
 	}
-	// create playlist
-	// return "Playlist not found"
+	cPlaylistID <- createPlaylist()
+}
+
+func createPlaylist() string {
+	url := "https://api.spotify.com/v1/users/cjgfe/playlists"
+	body := strings.NewReader(`{"name":"GoSnatch","description":"Your automatically generated GoSnatch playlist!","public":"false"}`)
+
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		fmt.Println(err)
+	}
+	req.Header.Set("Authorization", os.Getenv("AccessBearer"))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	map2b := make(map[string]interface{})
+	err = json.Unmarshal(bodyBytes, &map2b)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return map2b["id"].(string)
 }
 
 func checkPlaylist(userID, songID, playlistID string) bool {
