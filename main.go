@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
-	"github.com/deckarep/gosx-notifier"
 )
 
 var db = os.Getenv("GOPATH") + "/src/github.com/FenwickElliott/GoSnatch/db/"
@@ -38,20 +36,11 @@ func main() {
 
 	if checkPlaylist(userID, song[0], playlistID) {
 		if goSnatch(userID, song[0], playlistID) {
-			sendNote(song[1], song[2], "Was sucsessfully Snatched")
+			sendNote(song[1], song[2], "Was sucsessfully Snatched", "spotify")
 		}
 	} else {
-		sendNote(song[1], song[2], "Had already been Snatched")
+		sendNote(song[1], song[2], "Had already been Snatched", "fail")
 	}
-}
-
-func sendNote(title, subtitle, message string) {
-	note := gosxnotifier.NewNotification(message)
-	note.Title = title
-	note.Subtitle = subtitle
-	// note.ContentImage = db + "icon.png"
-	note.AppIcon = db + "icon.png"
-	_ = note.Push()
 }
 
 func goSnatch(userID, songID, playlistID string) bool {
@@ -140,36 +129,11 @@ func checkPlaylist(userID, songID, playlistID string) bool {
 func getSong(cSong chan []string) {
 	song := get("me/player/currently-playing")
 	if len(song) == 0 {
-		sendNote("Nothing Here", "Sorry", "...")
+		sendNote("Nothing Here", "Sorry", "...", "fail")
 		os.Exit(0)
 	}
 	item := song["item"].(map[string]interface{})
 	artists := item["artists"].([]interface{})
 	artist := artists[0].(map[string]interface{})
 	cSong <- []string{item["id"].(string), item["name"].(string), artist["name"].(string)}
-}
-
-func get(endpoint string) map[string]interface{} {
-	url := "https://api.spotify.com/v1/" + endpoint
-	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Set("Authorization", os.Getenv("AccessBearer"))
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == 401 {
-		refresh()
-		main()
-	}
-
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-	map2b := make(map[string]interface{})
-	err = json.Unmarshal(bodyBytes, &map2b)
-	if err != nil {
-		// panic(err)
-	}
-	return map2b
 }

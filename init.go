@@ -69,13 +69,6 @@ func exchangeCode(code string, done chan bool) {
 	done <- true
 }
 
-func write(name, content string) {
-	target := db + name
-	f, _ := os.Create(target)
-	f.WriteString(content)
-	defer f.Close()
-}
-
 func refresh() {
 	fmt.Println("Refreshing...")
 	refreshBody, err := ioutil.ReadFile("refreshBody")
