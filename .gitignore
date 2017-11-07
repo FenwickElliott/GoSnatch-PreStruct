@@ -1,2 +1,5 @@
 accessBearer
 refreshBody
+.vscode/*
+debug
+GoSnatch
