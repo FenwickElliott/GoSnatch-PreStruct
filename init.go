@@ -9,26 +9,29 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 )
 
 func initialize() {
 	fmt.Println("Initializing...")
-	go serve()
+	done := make(chan bool)
+	go serve(done)
 	askAuth()
-	time.Sleep(15 * time.Second)
+
+	finished := <-done
+
+	if finished {
+		fmt.Println("Initiation complete")
+	}
 }
 
-func serve() {
-	http.HandleFunc("/catch", catch)
+func serve(done chan bool) {
+	http.HandleFunc("/catch", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "Thank you, GoSnatch can now access your spotify account.\nYou may close this window.\n")
+		code := r.URL.Query()["code"][0]
+
+		exchangeCode(code, done)
+	})
 	http.ListenAndServe(":3456", nil)
-}
-
-func catch(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "Thank you, GoSnatch can now access your spotify account.\nYou may close this window.\n")
-	code := r.URL.Query()["code"][0]
-
-	exchangeCode(code)
 }
 
 func askAuth() {
@@ -36,7 +39,7 @@ func askAuth() {
 	exec.Command("open", url).Start()
 }
 
-func exchangeCode(code string) {
+func exchangeCode(code string, done chan bool) {
 	temp := "grant_type=authorization_code&code=" + code + "&redirect_uri=http://localhost:3456/catch"
 	body := strings.NewReader(temp)
 	req, _ := http.NewRequest("POST", "https://accounts.spotify.com/api/token", body)
@@ -62,6 +65,8 @@ func exchangeCode(code string) {
 	write("accessBearer", "Bearer "+bodyMap["access_token"].(string))
 	os.Setenv("AccessBearer", "Bearer "+bodyMap["access_token"].(string))
 	write("refreshBody", "grant_type=refresh_token&refresh_token="+bodyMap["refresh_token"].(string))
+
+	done <- true
 }
 
 func write(name, content string) {

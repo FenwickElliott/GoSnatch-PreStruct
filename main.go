@@ -140,7 +140,6 @@ func checkPlaylist(userID, songID, playlistID string) bool {
 func getSong(cSong chan []string) {
 	song := get("me/player/currently-playing")
 	if len(song) == 0 {
-		fmt.Println("nothing here")
 		sendNote("Nothing Here", "Sorry", "...")
 		os.Exit(0)
 	}
@@ -164,10 +163,6 @@ func get(endpoint string) map[string]interface{} {
 	if resp.StatusCode == 401 {
 		refresh()
 		main()
-	}
-
-	if resp.StatusCode == 204 {
-		// panic("\n\nApperetnly no song is playing, sorry\n\nMust fix this more gracefully")
 	}
 
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
