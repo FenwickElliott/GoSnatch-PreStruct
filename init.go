@@ -71,7 +71,7 @@ func exchangeCode(code string, done chan bool) {
 
 func refresh() {
 	fmt.Println("Refreshing...")
-	refreshBody, err := ioutil.ReadFile("refreshBody")
+	refreshBody, err := ioutil.ReadFile(db + "refreshBody")
 	if err != nil {
 		initialize()
 	}
